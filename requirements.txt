@@ -2,3 +2,6 @@
 pytest
 mypy
 pytest-mypy
+antidom~=1.0.0
+antidote~=1.4.1
+setuptools~=60.2.0
