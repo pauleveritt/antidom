@@ -13,10 +13,10 @@ def test_simple_component():
     assert "<h1>My Title!!</h1>" == result
 
 
-def test_simple_props():
-    from antidom.examples.simple_props import main
-    result = render(main())
-    assert "<h1>My Title!!</h1>" == result
+# def test_simple_props():
+#     from antidom.examples.simple_props import main
+#     result = render(main())
+#     assert "<h1>My Title!!</h1>" == result
 
 
 def test_config_injection():

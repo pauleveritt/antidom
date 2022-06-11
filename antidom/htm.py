@@ -1,32 +1,34 @@
+from __future__ import annotations
 import functools
 import re
+from typing import Callable, Any
 
 from .tagged import tag, ParseError
 
 RE_COLLAPSE = re.compile(r"^[^\S\n]*\n\s*|[^\S\n]*\n\s*$")
 
 
-def collapse_ws(string):
+def collapse_ws(string: str) -> Any:
     return RE_COLLAPSE.sub("", string)
 
 
-def get_simple_token(scanner, regex):
+def get_simple_token(scanner: Scanner, regex: re.Pattern[str]) -> str:
     match = scanner.match(regex)
     if not match:
         raise ParseError("no token found")
-    token = match.group(0)
+    token: str = match.group(0)
     if token[0] in "\"'" and token[0] == token[-1]:
         token = token[1:-1]
     return token
 
 
 class Scanner:
-    def __init__(self, strings):
+    def __init__(self, strings: tuple[str, ...]):
         self._strings = strings
         self._index = 0
         self._start = 0
 
-    def peek(self):
+    def peek(self) -> tuple[bool, object | None]:
         if self._index < len(self._strings):
             if self._start < len(self._strings[self._index]):
                 return True, self._strings[self._index][self._start]
@@ -34,7 +36,7 @@ class Scanner:
                 return False, self._index
         return False, None
 
-    def pop(self):
+    def pop(self) -> tuple[bool, int | object]:
         is_text, value = self.peek()
         if is_text:
             self._start += 1
@@ -43,7 +45,7 @@ class Scanner:
             self._start = 0
         return is_text, value
 
-    def match(self, regex):
+    def match(self, regex: re.Pattern[str]) -> re.Match[str] | None:
         if self._index < len(self._strings):
             match = regex.match(self._strings[self._index], self._start)
             if match:
@@ -51,9 +53,9 @@ class Scanner:
                 return match
         return None
 
-    def search(self, regex):
+    def search(self, regex: Any) -> Any:
         start = self._start
-        prefix = []
+        prefix: list[tuple[bool, int|str]] = []
         for index in range(self._index, len(self._strings)):
             match = regex.search(self._strings[index], start)
             if match:
@@ -69,8 +71,8 @@ class Scanner:
             start = 0
         return None, ()
 
-    def flush(self):
-        flushed = []
+    def flush(self) -> Any:
+        flushed: list[tuple[bool, str|int]] = []
         start = self._start
         for index in range(self._index, len(self._strings)):
             if start < len(self._strings[index]):
@@ -95,10 +97,10 @@ SINGLE_QUOTE = re.compile(r"'")
 PROP_VALUE_END = re.compile(r"(?=/>|>|\s)")
 
 
-def htm_parse(strings):
+def htm_parse(strings: tuple[str, ...]) -> list[Any]:
     scanner = Scanner(strings)
 
-    ops = []
+    ops: list[Any] = []
     while True:
         match, prefix = scanner.search(TAG_OR_COMMENT_START)
         for is_text, value in (prefix if match else scanner.flush()):
@@ -205,9 +207,14 @@ def htm_parse(strings):
     return ops
 
 
-def htm_eval(h, ops, values, index=0):
-    root = []
-    stack = [("", {}, root)]
+def htm_eval(
+        h: Callable[..., object],
+        ops: list[Any],
+        values: tuple[type],
+        index: int = 0
+) -> object:
+    root: list[object] = []
+    stack: list[tuple[Any, Any, Any]] = [("", {}, root)]
 
     for op in ops:
         if op[0] == "OPEN":
@@ -240,13 +247,13 @@ def htm_eval(h, ops, values, index=0):
     return root
 
 
-def htm(func=None, *, cache_maxsize=128):
+def htm(func: Callable[..., object] | None = None, *, cache_maxsize: int = 128) -> object:
     cached_parse = functools.lru_cache(maxsize=cache_maxsize)(htm_parse)
 
-    def _htm(h):
+    def _htm(h: Callable[..., object]) -> object:
         @tag
         @functools.wraps(h)
-        def __htm(strings, values):
+        def __htm(strings: tuple[str, str], values: tuple[type]) -> object:
             ops = cached_parse(strings)
             return htm_eval(h, ops, values)
 

@@ -4,7 +4,8 @@ import io
 import re
 from bisect import bisect
 from token import tok_name
-from tokenize import tokenize, untokenize
+from tokenize import tokenize, untokenize, TokenInfo
+from typing import List, Callable
 
 RE_TEMPLATE = re.compile(rb"(?:{{|}}|[^{}])*(?={|$)")
 
@@ -13,7 +14,7 @@ class ParseError(ValueError):
     pass
 
 
-def split(string, compile_exprs=False):
+def split(string: str, compile_exprs: bool = False) -> tuple[tuple[str, ...], tuple[str, ...]]:
     data = string.encode("utf-8")
     bio = io.BytesIO(data)
 
@@ -50,9 +51,9 @@ def split(string, compile_exprs=False):
     return tuple(strings), tuple(exprs)
 
 
-def parse_expr(bio):
+def parse_expr(bio: io.BytesIO) -> tuple[str, int, int]:
     count = 0
-    tokens = []
+    tokens: list[TokenInfo] = []
     for t in tokenize(bio.readline):
         if tok_name[t[0]] == "OP":
             if t[1] == "{":
@@ -66,12 +67,12 @@ def parse_expr(bio):
     raise ParseError("unterminated expression")
 
 
-def tag(func=None, *, cache_maxsize=128):
+def tag(func: Callable[..., object] | None = None, *, cache_maxsize: int = 128) -> object:
     cached_split = functools.lru_cache(cache_maxsize)(split)
 
-    def _tag(func):
+    def _tag(func: Callable[..., object]) -> object:
         @functools.wraps(func)
-        def __tag(string):
+        def __tag(string: str) -> object:
             strings, exprs = cached_split(string, compile_exprs=True)
 
             stack = inspect.stack()
