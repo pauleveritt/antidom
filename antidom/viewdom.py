@@ -1,13 +1,11 @@
 """ViewDOM."""
 from __future__ import annotations
 
-import functools
 import threading
 from collections import ChainMap
 from collections.abc import ByteString
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Callable
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -15,31 +13,12 @@ from typing import Sequence
 from typing import Union
 
 from antidote import world
-from .htm import htm_eval
-from .htm import htm_parse
-from .tagged import tag
 
-
-class Registry:
-    pass
-
-
-class Props:
-    pass
-
-
-class Registration:
-    pass
-
-
-def inject_callable(registration,
-                    props=None,
-                    registry=None,
-                    ):
-    pass
+from .htm import htm
 
 
 def escape(fake):
+    # TODO Consider using MarkupSafe for escaping
     return fake
 
 
@@ -76,25 +55,6 @@ class VDOMNode:
 
 VDOM = Union[Sequence[VDOMNode], VDOMNode]
 
-
-def htm(func=None, *, cache_maxsize=128) -> Callable[[str], VDOM]:
-    """The callable function to act as decorator."""
-    cached_parse = functools.lru_cache(maxsize=cache_maxsize)(htm_parse)
-
-    def _htm(h):
-        @tag
-        @functools.wraps(h)
-        def __htm(strings, values):
-            ops = cached_parse(strings)
-            return htm_eval(h, ops, values)
-
-        return __htm
-
-    if func is not None:
-        return _htm(func)
-    return _htm
-
-
 html = htm(VDOMNode)
 
 
@@ -116,44 +76,25 @@ def flatten(value):
 def relaxed_call(
         callable_,
         children=None,
-        props: Optional[Props] = None,
+        props: Optional[Mapping] = None,
 ) -> VDOM:
-    """Get the correct implementation and call it to produce a vdom."""
+    """Very simplified version of ViewDOM instantiation."""
     # Props should include children, which come from "the system"
     if props is None:
         props = {}
     full_props = props | dict(children=children)
 
-    vdom = None
-    try:
-        vdom = world.get(callable_)
-    except LookupError:
-        # We'll give a chance at the next step.
-        pass
+    # Get a constructed instance from the Antidote world.
+    # TODO Provide the props in some manner.
+    # TODO If the world doesn't know about the callable_ because
+    #    it isn't registered, it means it is a local symbol. Later,
+    #    I'll make some logic to construct simple unregistered components.
+    target = world.get(callable_)
+    if callable(target):
+        # This is class-based component. Rendering happens in two steps.
+        return target()
 
-
-    if vdom is None:
-        if callable_.__class__.__name__ not in ["type", "function"] and callable(
-                callable_
-        ):
-            # The symbol is an already-instantiated class, like a component,
-            # which has a __call__.
-            vdom = callable_
-        else:
-            registration = Registration(
-                implementation=callable_,
-            )
-            vdom = inject_callable(
-                registration,
-                props=full_props,
-                registry=registry,
-            )
-
-    if callable(vdom):
-        # This is class-based component.
-        vdom = vdom()
-
-    return vdom
+    return target
 
 
 def render(value: VDOM) -> str:
@@ -223,5 +164,5 @@ def Context(children=None, **kwargs):  # noqa: N802
 
 def use_context(key, default=None):
     """Similar to the React use context API."""
-    context = getattr(_local, "context", ChainMap())
+    context: Mapping = getattr(_local, "context", ChainMap())
     return context.get(key, default)
