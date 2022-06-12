@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 
-from antidote import injectable
-
 from antidom import html, VDOM
+from antidom.component import component
 
 
-@injectable()
+@component()
 @dataclass
 class Heading:
     """The default heading."""
 
-    def __call__(self) -> VDOM:
+    def __vdom__(self) -> VDOM:
         """Render the component."""
         return html(f"<h1>My Title!!</h1>")
 

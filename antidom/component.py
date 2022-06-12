@@ -16,7 +16,7 @@ class Component(Protocol):
 C = TypeVar('C', bound=Type[Component])
 
 
-def component(context: Type[Resource]) -> Callable[[C], C]:
+def component(context: Type[Resource] | None = None) -> Callable[[C], C]:
     def decorate(cls: C) -> C:
         implements(Component).when(qualified_by=context)(cls)
         return cls

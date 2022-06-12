@@ -1,12 +1,11 @@
-"""Test the component protocol and decorator."""
+"""A view which uses a component which plucks the name off a resource."""
 from dataclasses import dataclass
 
 from antidote import inject
 
 from antidom import VDOM, html, Resource, view
 from antidom.component import component
-from ..resource import add_resource
-from ..view import get_view
+from antidom.operator import get
 
 
 @dataclass
@@ -20,11 +19,11 @@ class Greeter:
 class Heading:
     """The default heading."""
 
-    greeter: Resource = inject.me()
+    greeter_name: str = get(Resource, attr="name")
 
     def __vdom__(self) -> VDOM:
         """Render the component."""
-        return html(f"<h1>Hello {self.greeter.name}</h1>")
+        return html(f"<h1>Operator hello {self.greeter_name}</h1>")
 
 
 @view(context=Greeter)
@@ -37,8 +36,4 @@ class GreeterView:
 
 
 def main() -> VDOM:
-    greeter = Greeter(name='fixture_greeter', parent=None)
-    add_resource(greeter)
-    this_view = get_view()
-    result = this_view.__vdom__()
-    return result
+    return html("<{Heading} />")

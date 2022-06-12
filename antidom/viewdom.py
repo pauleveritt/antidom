@@ -6,7 +6,7 @@ import re
 from collections.abc import ByteString
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Callable, Any, Mapping, Sequence, cast
+from typing import Callable, Any, Mapping, Sequence, cast, Protocol
 from typing import Generator, Literal
 from typing import Optional
 
@@ -311,8 +311,14 @@ VOIDS = (
 html = htm()
 
 
+class Component(Protocol):
+
+    def __vdom__(self) -> VDOMNode:
+        ...
+
+
 def flatten(
-        value: Sequence[str | VDOMNode] | VDOMNode | Callable[..., Any]
+        value: Sequence[str | VDOMNode] | VDOMNode | Component
 ) -> Generator[VDOMNode | str, Any, Any]:
     """Reduce a sequence."""
     if isinstance(value, Iterable) and not isinstance(
@@ -320,13 +326,14 @@ def flatten(
     ):
         for item in value:
             yield from flatten(item)
+    elif isinstance(value, str) or isinstance(value, VDOMNode):
+        yield value
     elif hasattr(value, '__vdom__'):
         # E.g. a dataclass with an __vdom__ method
         vdom = value.__vdom__()
         yield vdom
     else:
-        yield value
-
+        raise ValueError("Unknown flattened value")
 
 def relaxed_call(
         callable_: Callable[..., VDOMNode],
@@ -362,7 +369,7 @@ def render(value: VDOM) -> str:
 
 
 def render_gen(
-        value: Sequence[str | VDOMNode] | VDOMNode | Callable[..., Any]
+        value: Sequence[str | VDOMNode] | VDOMNode | Component
 ) -> Iterable[str]:
     """Render as a generator."""
     for item in flatten(value):

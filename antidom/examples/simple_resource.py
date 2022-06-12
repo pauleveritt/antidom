@@ -26,6 +26,8 @@ class GreeterView:
 
 
 def main() -> VDOM:
+    greeter = Greeter(name='fixture_greeter', parent=None)
+    add_resource(greeter)
     this_view = get_view()
     result = this_view.__vdom__()
     return result
