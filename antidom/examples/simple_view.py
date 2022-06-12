@@ -6,6 +6,6 @@ from . import Store
 
 
 def main() -> VDOM:
-    this_view = get_view(Store)
+    this_view = get_view()
     result = this_view.__vdom__()
     return result
