@@ -335,6 +335,7 @@ def flatten(
     else:
         raise ValueError("Unknown flattened value")
 
+
 def relaxed_call(
         callable_: Callable[..., VDOMNode],
         children: list[str | VDOMNode | Sequence[VDOMNode]] | None = None,
