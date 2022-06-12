@@ -2,8 +2,7 @@ from dataclasses import dataclass
 
 from antidote import injectable
 
-from antidom.htm import VDOM
-from antidom.viewdom import html
+from antidom import html, VDOM
 
 
 @injectable()

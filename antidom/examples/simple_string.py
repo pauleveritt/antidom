@@ -1,5 +1,4 @@
-from antidom.htm import VDOM
-from antidom.viewdom import html
+from antidom import html, VDOM
 
 
 def main() -> VDOM:
