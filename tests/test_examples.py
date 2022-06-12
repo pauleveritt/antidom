@@ -35,6 +35,12 @@ def test_simple_view() -> None:
     assert "Welcome to Store View" == result
 
 
+def test_simple_resource() -> None:
+    from antidom.examples.simple_resource import main
+    result = render(main())
+    assert "Hello first" == result
+
+
 def test_view_component() -> None:
     from antidom.examples.view_component import main
     result = render(main())

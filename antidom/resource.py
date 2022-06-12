@@ -31,7 +31,7 @@ class ResourceProvider(Provider[str]):
 
     def provide(self, dependency: str, container: Container) -> DependencyValue:
         """Actually get the value."""
-        return DependencyValue(self._current_resource, scope=None)
+        return DependencyValue(self._current_resource)
 
     def add_resource(self, resource: Resource) -> None:
         self._current_resource = resource
@@ -43,3 +43,8 @@ def add_resource(new_resource: Resource,
                  ) -> None:
     assert provider is not None
     provider.add_resource(new_resource)
+
+
+@inject
+def get_resource(this_resource: Resource = inject.me()) -> Resource:
+    return this_resource

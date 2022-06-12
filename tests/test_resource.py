@@ -1,29 +1,21 @@
-from typing import cast
-
 from antidote import world
 
 from antidom.examples import Customer
-from antidom.resource import Resource, add_resource
+from antidom.resource import Resource, add_resource, get_resource
 
 
-# def test_current_resource() -> None:
-#     cr = current_resource()
-#     result = cr(None)
-#     assert None is result
-#
-#     # Now set a value
-#     this_resource = Customer(name='This Customer', parent=None)
-#     result = cr(this_resource)
-#     assert this_resource == result
-
-
-def test_get_resource() -> None:
+def test_request_resource() -> None:
+    """Simulate different requests with a stateful provider."""
     # We haven't added a resource to the provider yet
-    this_customer = Customer(name='First Customer', parent=None)
     this_resource = world.get[Resource]  # type: ignore
     assert this_resource(Resource) is None
 
     # Now add the resource
-    add_resource(this_customer)
-    this_resource = world.get[Resource]  # type: ignore
-    assert this_resource(Resource) == this_customer
+    first_customer = Customer(name='First Customer', parent=None)
+    add_resource(first_customer)
+    assert get_resource() == first_customer
+
+    # Try a second resource
+    second_customer = Customer(name='Second Customer', parent=None)
+    add_resource(second_customer)
+    assert get_resource() == second_customer
