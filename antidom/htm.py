@@ -1,9 +1,24 @@
 from __future__ import annotations
+
 import functools
 import re
-from typing import Callable, Any
+from dataclasses import dataclass
+from typing import Callable, Any, Mapping, Sequence, cast
 
 from .tagged import tag, ParseError
+
+
+@dataclass(frozen=True)
+class VDOMNode:
+    """Implementation of a node with three slots."""
+
+    __slots__ = ["tag", "props", "children"]
+    tag: str
+    props: Mapping[str, object]
+    children: list[str | VDOMNode]
+
+
+VDOM = Sequence[VDOMNode] | VDOMNode
 
 RE_COLLAPSE = re.compile(r"^[^\S\n]*\n\s*|[^\S\n]*\n\s*$")
 
@@ -55,7 +70,7 @@ class Scanner:
 
     def search(self, regex: Any) -> Any:
         start = self._start
-        prefix: list[tuple[bool, int|str]] = []
+        prefix: list[tuple[bool, int | str]] = []
         for index in range(self._index, len(self._strings)):
             match = regex.search(self._strings[index], start)
             if match:
@@ -72,7 +87,7 @@ class Scanner:
         return None, ()
 
     def flush(self) -> Any:
-        flushed: list[tuple[bool, str|int]] = []
+        flushed: list[tuple[bool, str | int]] = []
         start = self._start
         for index in range(self._index, len(self._strings)):
             if start < len(self._strings[index]):
@@ -207,13 +222,15 @@ def htm_parse(strings: tuple[str, ...]) -> list[Any]:
     return ops
 
 
+HtmEvalValue = str | VDOMNode
+HtmEval = HtmEvalValue | Sequence[HtmEvalValue]
 def htm_eval(
         h: Callable[..., object],
         ops: list[Any],
         values: tuple[type],
         index: int = 0
-) -> object:
-    root: list[object] = []
+) -> HtmEval:
+    root: list[HtmEvalValue] = []
     stack: list[tuple[Any, Any, Any]] = [("", {}, root)]
 
     for op in ops:
@@ -240,25 +257,20 @@ def htm_eval(
             tag, props, children = stack[-1]
             children.append(values[item] if value else item)
         else:
-            raise BaseException("unknown op")
+            raise ValueError("unknown op")
 
     if len(root) == 1:
         return root[0]
     return root
 
 
-def htm(func: Callable[..., object] | None = None, *, cache_maxsize: int = 128) -> object:
+def htm(cache_maxsize: int=128) -> Callable[[str], VDOM]:
+    """The callable function to act as decorator."""
     cached_parse = functools.lru_cache(maxsize=cache_maxsize)(htm_parse)
 
-    def _htm(h: Callable[..., object]) -> object:
-        @tag
-        @functools.wraps(h)
-        def __htm(strings: tuple[str, str], values: tuple[type]) -> object:
-            ops = cached_parse(strings)
-            return htm_eval(h, ops, values)
+    @tag
+    def __htm(strings: tuple[str, ...], values: tuple[type]) -> HtmEval:
+        ops = cached_parse(strings)
+        return htm_eval(VDOMNode, ops, values)
 
-        return __htm
-
-    if func is not None:
-        return _htm(func)
-    return _htm
+    return cast(Callable[[str], VDOM], __htm)

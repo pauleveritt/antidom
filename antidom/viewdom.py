@@ -5,21 +5,19 @@ import threading
 from collections import ChainMap
 from collections.abc import ByteString
 from collections.abc import Iterable
-from dataclasses import dataclass
-from typing import List
+from typing import Any, Generator, Literal, Callable, cast
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
-from typing import Union
 
 from antidote import world
 
-from .htm import htm
+from .htm import htm, VDOMNode, VDOM
 
 
-def escape(fake):
+def escape(fake: object) -> str:
     # TODO Consider using MarkupSafe for escaping
-    return fake
+    return str(fake)
 
 
 # "void" elements are allowed to be self-closing
@@ -42,23 +40,12 @@ VOIDS = (
     "wbr",
 )
 
-
-@dataclass(frozen=True)
-class VDOMNode:
-    """Implementation of a node with three slots."""
-
-    __slots__ = ["tag", "props", "children"]
-    tag: str
-    props: Mapping
-    children: List[Union[str, VDOMNode]]
+html = htm()
 
 
-VDOM = Union[Sequence[VDOMNode], VDOMNode]
-
-html = htm(VDOMNode)
-
-
-def flatten(value):
+def flatten(
+        value: Sequence[str | VDOMNode] | VDOMNode | Callable[..., Any]
+) -> Generator[VDOMNode | str, Any, Any]:
     """Reduce a sequence."""
     if isinstance(value, Iterable) and not isinstance(
             value, (VDOMNode, str, ByteString)
@@ -74,9 +61,9 @@ def flatten(value):
 
 
 def relaxed_call(
-        callable_,
-        children=None,
-        props: Optional[Mapping] = None,
+        callable_: Callable[..., VDOMNode],
+        children: list[str | VDOMNode | Sequence[VDOMNode]] | None = None,
+        props: Optional[Mapping[str, object]] = None,
 ) -> VDOM:
     """Very simplified version of ViewDOM instantiation."""
     # Props should include children, which come from "the system"
@@ -89,25 +76,26 @@ def relaxed_call(
     # TODO If the world doesn't know about the callable_ because
     #    it isn't registered, it means it is a local symbol. Later,
     #    I'll make some logic to construct simple unregistered components.
-    target = world.get(callable_)
+    # TODO Fix the typing on this, should be a type, not a Callable
+    target = world.get(callable_)  # type: ignore
     if callable(target):
         # This is class-based component. Rendering happens in two steps.
-        return target()
+        result: VDOMNode = target()
+        return result
 
-    return target
+    return cast(VDOMNode, target)
 
 
 def render(value: VDOM) -> str:
     """Render a VDOM to a string."""
     return "".join(
-        render_gen(
-            value,
-            children=None,
-        )
+        render_gen(value)
     )
 
 
-def render_gen(value, children=None):
+def render_gen(
+        value: Sequence[str | VDOMNode] | VDOMNode | Callable[..., Any]
+) -> Iterable[str]:
     """Render as a generator."""
     for item in flatten(value):
         if isinstance(item, VDOMNode):
@@ -116,7 +104,7 @@ def render_gen(value, children=None):
             # Is this_tag a callable component, or just '<div>'?
             if callable(this_tag):
                 yield from render_gen(
-                    relaxed_call(this_tag, children=children, props=props)
+                    relaxed_call(this_tag, props=props)
                 )
                 continue
 
@@ -133,11 +121,11 @@ def render_gen(value, children=None):
                 yield "/>"
             else:
                 yield f"></{this_tag}>"
-        elif item not in (True, False, None):
+        elif item not in (True, False, None):  # type: ignore
             yield escape(item)
 
 
-def encode_prop(k, v):
+def encode_prop(k: str, v: object | Literal[True]) -> str:
     """If possible, reduce an attribute to just the name."""
     if v is True:
         return escape(k)
@@ -152,9 +140,10 @@ def encode_prop(k, v):
 _local = threading.local()
 
 
-def Context(children=None, **kwargs):  # noqa: N802
+def Context(children: Iterable[VDOMNode] | None = None, **kwargs: Any) -> Generator[
+    Iterable[VDOMNode] | None, Any, Any]:  # noqa: N802
     """Like the React Conext API."""
-    context = getattr(_local, "context", ChainMap())
+    context: ChainMap[str, object] = getattr(_local, "context", ChainMap())
     try:
         _local.context = context.new_child(kwargs)
         yield children
@@ -162,7 +151,7 @@ def Context(children=None, **kwargs):  # noqa: N802
         _local.context = context
 
 
-def use_context(key, default=None):
+def use_context(key: str, default: object = None) -> object:
     """Similar to the React use context API."""
-    context: Mapping = getattr(_local, "context", ChainMap())
+    context: ChainMap[str, object] = getattr(_local, "context", ChainMap())
     return context.get(key, default)

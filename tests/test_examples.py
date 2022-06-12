@@ -3,7 +3,8 @@ from antidom.viewdom import render
 
 def test_simple_string():
     from antidom.examples.simple_string import main
-    result = render(main())
+    m = main()
+    result = render(m)
     assert "<p>Hello World</p>" == result
 
 

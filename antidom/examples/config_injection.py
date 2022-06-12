@@ -2,7 +2,8 @@ from dataclasses import dataclass
 
 from antidote import injectable, const
 
-from antidom.viewdom import html, VDOM
+from antidom.htm import VDOM
+from antidom.viewdom import html
 
 
 class Config:
