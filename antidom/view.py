@@ -2,7 +2,8 @@ from typing import Callable, Protocol, Type, TypeVar
 
 from antidote import implements, interface, world, inject
 
-from antidom import VDOM, Resource
+from antidom.viewdom import VDOM
+from antidom.resource import Resource
 
 
 @interface

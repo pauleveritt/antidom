@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from antidom import Resource
 from antidom import html, VDOM
-from antidom.view import view
+from antidom import view
 
 
 @dataclass

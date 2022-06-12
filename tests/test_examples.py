@@ -62,4 +62,4 @@ def test_simple_resource(greeter_resource: Greeter) -> None:
 def test_view_component(store_resource: Store) -> None:
     from antidom.examples.view_component import main
     result = render(main())
-    assert "Welcome to Store View" == result
+    assert "<h1>Hello fixture_store</h1>" == result

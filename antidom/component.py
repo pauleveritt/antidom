@@ -1,9 +1,9 @@
 from typing import Callable, Protocol, Type, TypeVar
 
-from antidote import implements, interface, world
+from antidote import implements, interface, world, inject
 
-from antidom import VDOM
-from antidom import Resource
+from antidom.resource import Resource
+from antidom.viewdom import VDOM
 
 
 @interface
@@ -24,8 +24,9 @@ def component(context: Type[Resource]) -> Callable[[C], C]:
     return decorate
 
 
-def get_component(context_type: Type[Resource]) -> Component:
+def get_component(this_resource: Resource = inject.me()) -> Component:
     """Find the correct component for the context."""
+    context_type = this_resource.__class__
     components = world.get[Component]  # type: ignore
     this_component = components.single(qualified_by=context_type)
     return this_component

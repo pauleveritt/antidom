@@ -320,9 +320,9 @@ def flatten(
     ):
         for item in value:
             yield from flatten(item)
-    elif callable(value):
-        # E.g. a dataclass with an __call__
-        vdom = value()
+    elif hasattr(value, '__vdom__'):
+        # E.g. a dataclass with an __vdom__ method
+        vdom = value.__vdom__()
         yield vdom
     else:
         yield value
