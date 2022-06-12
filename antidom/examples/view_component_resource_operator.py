@@ -1,11 +1,11 @@
 """A view which uses a component which plucks the name off a resource."""
 from dataclasses import dataclass
 
-from antidote import inject
-
 from antidom import VDOM, html, Resource, view
 from antidom.component import component
 from antidom.operator import get
+from antidom.resource import add_resource
+from antidom.viewdom import render
 
 
 @dataclass
@@ -35,5 +35,9 @@ class GreeterView:
         return html("<{Heading} />")
 
 
-def main() -> VDOM:
-    return html("<{Heading} />")
+def main() -> tuple[str, str]:
+    greeter = Greeter(name='fixture_greeter', parent=None)
+    add_resource(greeter)
+    vdom = html("<{Heading} />")
+    actual = render(vdom)
+    return actual, '<h1>Operator hello fixture_greeter</h1>'

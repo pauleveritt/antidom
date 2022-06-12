@@ -1,7 +1,15 @@
+from dataclasses import dataclass
+
 from antidote import world
 
-from antidom.examples import Customer
-from antidom.resource import Resource, add_resource, get_resource
+from antidom import Resource
+from antidom.resource import add_resource, get_resource
+
+
+@dataclass
+class Customer:
+    name: str | None
+    parent: Resource | None
 
 
 def test_request_resource() -> None:

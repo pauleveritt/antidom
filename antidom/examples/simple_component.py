@@ -1,7 +1,9 @@
+"""Very simple usage of a component in a template."""
 from dataclasses import dataclass
 
 from antidom import html, VDOM
 from antidom.component import component
+from antidom.viewdom import render
 
 
 @component()
@@ -10,9 +12,9 @@ class Heading:
     """The default heading."""
 
     def __vdom__(self) -> VDOM:
-        """Render the component."""
-        return html(f"<h1>My Title!!</h1>")
+        return html(f'<h1>My Title!!</h1>')
 
 
-def main() -> VDOM:
-    return html("<{Heading} />")
+def main() -> tuple[str, str]:
+    actual = render(html('<{Heading} />'))
+    return actual, '<h1>My Title!!</h1>'

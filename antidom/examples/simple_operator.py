@@ -1,4 +1,4 @@
-"""Use a get operator with an attr."""
+"""Use a get operator with an attr to reduce the surface area."""
 from dataclasses import dataclass
 
 from antidote import injectable, world
@@ -17,6 +17,7 @@ class GreeterFirstName:
     customer_name: str = get(Customer, attr="first_name")
 
 
-def main() -> GreeterFirstName:
-    greeter = world.get(GreeterFirstName)
-    return greeter
+def main() -> tuple[str, str]:
+    greeter: GreeterFirstName = world.get(GreeterFirstName)
+    actual = greeter.customer_name
+    return actual, 'John'

@@ -1,11 +1,49 @@
-"""Test the view protocol and decorator."""
+"""Test the view protocol and decorator.
 
-from antidom import VDOM
-from antidom.view import get_view
-from . import Store
+This example shows views registered for different context resources.
+"""
+from dataclasses import dataclass
+
+from antidom import VDOM, Resource, html
+from antidom.resource import add_resource
+from antidom.view import get_view, view
+from antidom.viewdom import render
 
 
-def main() -> VDOM:
+@dataclass
+class Customer:
+    name: str | None
+    parent: Resource | None
+
+
+@dataclass
+class Store:
+    name: str | None
+    parent: Resource | None
+
+
+@view(context=Customer)
+@dataclass
+class CustomerView:
+    name: str = "Customer View"
+
+    def __vdom__(self) -> VDOM:
+        return html(f'Hello {self.name}')
+
+
+@view(context=Store)
+@dataclass
+class StoreView:
+    name: str = 'Store View'
+
+    def __vdom__(self) -> VDOM:
+        return html(f'Welcome to {self.name}')
+
+
+def main() -> tuple[str, str]:
+    store = Store(name='fixture_store', parent=None)
+    add_resource(store)
     this_view = get_view()
-    result = this_view.__vdom__()
-    return result
+    vdom = this_view.__vdom__()
+    actual = render(vdom)
+    return actual, 'Welcome to Store View'
