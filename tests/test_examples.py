@@ -1,3 +1,5 @@
+import pytest
+
 from antidom.viewdom import render
 
 
@@ -14,13 +16,20 @@ def test_simple_component() -> None:
     assert "<h1>My Title!!</h1>" == result
 
 
-# def test_simple_props():
-#     from antidom.examples.simple_props import main
-#     result = render(main())
-#     assert "<h1>My Title!!</h1>" == result
+@pytest.mark.skip(reason="Props not implemented in Antidote")
+def test_simple_props() -> None:
+    from antidom.examples.simple_props import main
+    result = render(main())
+    assert "<h1>My Title!!</h1>" == result
 
 
 def test_config_injection() -> None:
     from antidom.examples.config_injection import main
     result = render(main())
     assert "<h1>My Title!!</h1>" == result
+
+
+def test_simple_view() -> None:
+    from antidom.examples.simple_view import main
+    result = render(main())
+    assert "Welcome to Store View" == result
