@@ -50,7 +50,7 @@ class Scanner:
         self._index = 0
         self._start = 0
 
-    def peek(self) -> tuple[bool, object | None]:
+    def peek(self) -> tuple[bool, str | int | None]:
         if self._index < len(self._strings):
             if self._start < len(self._strings[self._index]):
                 return True, self._strings[self._index][self._start]
@@ -147,8 +147,8 @@ def htm_parse(strings: tuple[str, ...]) -> list[Any]:
             slash = False
             is_text, value = scanner.peek()
             if is_text:
-                tag = get_simple_token(scanner, TAG_NAME)
-                ops.append(("OPEN", False, tag))
+                this_tag = get_simple_token(scanner, TAG_NAME)
+                ops.append(("OPEN", False, this_tag))
             elif value is not None:
                 scanner.pop()
                 ops.append(("OPEN", True, value))
@@ -169,7 +169,6 @@ def htm_parse(strings: tuple[str, ...]) -> list[Any]:
                     slash = True
                 if slash:
                     ops.append(("CLOSE",))
-                slash = False
                 break
 
             match = scanner.match(SPREAD)
@@ -237,33 +236,32 @@ def htm_eval(
         h: Callable[..., object],
         ops: list[Any],
         values: tuple[type],
-        index: int = 0
 ) -> HtmEval:
     root: list[HtmEvalValue] = []
     stack: list[tuple[Any, Any, Any]] = [("", {}, root)]
 
     for op in ops:
         if op[0] == "OPEN":
-            _, value, tag = op
-            stack.append((values[tag] if value else tag, {}, []))
+            _, value, this_tag = op
+            stack.append((values[this_tag] if value else this_tag, {}, []))
         elif op[0] == "CLOSE":
-            tag, props, children = stack.pop()
-            stack[-1][2].append(h(tag, props, children))
+            this_tag, props, children = stack.pop()
+            stack[-1][2].append(h(this_tag, props, children))
         elif op[0] == "SPREAD":
             _, value, item = op
-            tag, props, children = stack[-1]
+            this_tag, props, children = stack[-1]
             props.update(values[item] if value else item)
         elif op[0] == "PROP_SINGLE":
             _, attr, value, item = op
-            tag, props, children = stack[-1]
+            this_tag, props, children = stack[-1]
             props[attr] = values[item] if value else item
         elif op[0] == "PROP_MULTI":
             _, attr, items = op
-            tag, props, children = stack[-1]
+            this_tag, props, children = stack[-1]
             props[attr] = "".join(value if is_text else str(values[value]) for (is_text, value) in items)
         elif op[0] == "CHILD":
             _, value, item = op
-            tag, props, children = stack[-1]
+            this_tag, props, children = stack[-1]
             children.append(values[item] if value else item)
         else:
             raise ValueError("unknown op")
@@ -339,7 +337,7 @@ def relaxed_call(
     # Props should include children, which come from "the system"
     if props is None:
         props = {}
-    full_props = props | dict(children=children)
+    full_props = props | dict(children=children)  # noqa
 
     # Get a constructed instance from the Antidote world.
     # TODO Provide the props in some manner.
